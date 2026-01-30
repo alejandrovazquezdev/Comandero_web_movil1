@@ -1,6 +1,30 @@
 -- Agregar columna de categoría al inventario (si no existe)
-ALTER TABLE inventario_item
-  ADD COLUMN IF NOT EXISTS categoria VARCHAR(64) NOT NULL DEFAULT 'Otros';
+-- MySQL compatible version using stored procedure
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS add_categoria_column$$
+
+CREATE PROCEDURE add_categoria_column()
+BEGIN
+  -- Check if column exists
+  IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'inventario_item'
+      AND COLUMN_NAME = 'categoria'
+  ) THEN
+    ALTER TABLE inventario_item
+      ADD COLUMN categoria VARCHAR(64) NOT NULL DEFAULT 'Otros';
+  END IF;
+END$$
+
+DELIMITER ;
+
+-- Execute the procedure
+CALL add_categoria_column();
+
+-- Clean up
+DROP PROCEDURE IF EXISTS add_categoria_column;
 
 -- Crear tabla para ingredientes de productos
 CREATE TABLE IF NOT EXISTS producto_ingrediente (
