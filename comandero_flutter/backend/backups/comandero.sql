@@ -685,39 +685,190 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- ============================================
 -- ETAPA 12: Agregar columnas adicionales si no existen
 -- ============================================
--- Agregar columna password a usuario si no existe
-ALTER TABLE usuario ADD COLUMN IF NOT EXISTS password VARCHAR(255) NULL AFTER password_hash;
+-- MySQL compatible version using stored procedures
 
--- Agregar columna telefono a usuario si no existe
-ALTER TABLE usuario ADD COLUMN IF NOT EXISTS telefono VARCHAR(40) NULL AFTER username;
+DELIMITER $$
 
--- Agregar columna ultimo_acceso a usuario si no existe
-ALTER TABLE usuario ADD COLUMN IF NOT EXISTS ultimo_acceso TIMESTAMP NULL AFTER activo;
+-- Procedure to add columns to usuario table
+DROP PROCEDURE IF EXISTS add_usuario_columns$$
+CREATE PROCEDURE add_usuario_columns()
+BEGIN
+  -- Agregar columna password a usuario si no existe
+  IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'usuario'
+      AND COLUMN_NAME = 'password'
+  ) THEN
+    ALTER TABLE usuario ADD COLUMN password VARCHAR(255) NULL AFTER password_hash;
+  END IF;
 
--- Agregar columna password_actualizada_por_usuario_id a usuario si no existe
-ALTER TABLE usuario ADD COLUMN IF NOT EXISTS password_actualizada_por_usuario_id BIGINT UNSIGNED NULL AFTER password_actualizada_en;
+  -- Agregar columna telefono a usuario si no existe
+  IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'usuario'
+      AND COLUMN_NAME = 'telefono'
+  ) THEN
+    ALTER TABLE usuario ADD COLUMN telefono VARCHAR(40) NULL AFTER username;
+  END IF;
 
--- Agregar columna tiempo_estimado_preparacion a orden si no existe
-ALTER TABLE orden ADD COLUMN IF NOT EXISTS tiempo_estimado_preparacion INT UNSIGNED NULL AFTER propina_sugerida;
+  -- Agregar columna ultimo_acceso a usuario si no existe
+  IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'usuario'
+      AND COLUMN_NAME = 'ultimo_acceso'
+  ) THEN
+    ALTER TABLE usuario ADD COLUMN ultimo_acceso TIMESTAMP NULL AFTER activo;
+  END IF;
 
--- Agregar columna cliente_telefono a orden si no existe
-ALTER TABLE orden ADD COLUMN IF NOT EXISTS cliente_telefono VARCHAR(40) NULL AFTER cliente_nombre;
+  -- Agregar columna password_actualizada_por_usuario_id a usuario si no existe
+  IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'usuario'
+      AND COLUMN_NAME = 'password_actualizada_por_usuario_id'
+  ) THEN
+    ALTER TABLE usuario ADD COLUMN password_actualizada_por_usuario_id BIGINT UNSIGNED NULL AFTER password_actualizada_en;
+  END IF;
+END$$
 
--- Agregar columna metadata a alerta si no existe
-ALTER TABLE alerta ADD COLUMN IF NOT EXISTS metadata JSON NULL AFTER mensaje;
+-- Procedure to add columns to orden table
+DROP PROCEDURE IF EXISTS add_orden_columns$$
+CREATE PROCEDURE add_orden_columns()
+BEGIN
+  -- Agregar columna tiempo_estimado_preparacion a orden si no existe
+  IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'orden'
+      AND COLUMN_NAME = 'tiempo_estimado_preparacion'
+  ) THEN
+    ALTER TABLE orden ADD COLUMN tiempo_estimado_preparacion INT UNSIGNED NULL AFTER propina_sugerida;
+  END IF;
 
--- Agregar campos de lectura a alerta si no existen
-ALTER TABLE alerta ADD COLUMN IF NOT EXISTS leido_por_usuario_id BIGINT UNSIGNED NULL AFTER leida;
-ALTER TABLE alerta ADD COLUMN IF NOT EXISTS leido_en TIMESTAMP NULL AFTER leido_por_usuario_id;
+  -- Agregar columna cliente_telefono a orden si no existe
+  IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'orden'
+      AND COLUMN_NAME = 'cliente_telefono'
+  ) THEN
+    ALTER TABLE orden ADD COLUMN cliente_telefono VARCHAR(40) NULL AFTER cliente_nombre;
+  END IF;
+END$$
 
--- Agregar campos de revisión a caja_cierre si no existen (para módulo de cierres)
-ALTER TABLE caja_cierre ADD COLUMN IF NOT EXISTS estado VARCHAR(20) NOT NULL DEFAULT 'pending' AFTER notas;
-ALTER TABLE caja_cierre ADD COLUMN IF NOT EXISTS revisado_por_usuario_id BIGINT UNSIGNED NULL AFTER estado;
-ALTER TABLE caja_cierre ADD COLUMN IF NOT EXISTS revisado_en TIMESTAMP NULL AFTER revisado_por_usuario_id;
-ALTER TABLE caja_cierre ADD COLUMN IF NOT EXISTS comentario_revision TEXT NULL AFTER revisado_en;
+-- Procedure to add columns to alerta table
+DROP PROCEDURE IF EXISTS add_alerta_columns$$
+CREATE PROCEDURE add_alerta_columns()
+BEGIN
+  -- Agregar columna metadata a alerta si no existe
+  IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'alerta'
+      AND COLUMN_NAME = 'metadata'
+  ) THEN
+    ALTER TABLE alerta ADD COLUMN metadata JSON NULL AFTER mensaje;
+  END IF;
 
--- Agregar constraint único a caja_cierre.fecha si no existe
-ALTER TABLE caja_cierre ADD UNIQUE KEY IF NOT EXISTS ux_caja_fecha (fecha);
+  -- Agregar columna leido_por_usuario_id a alerta si no existe
+  IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'alerta'
+      AND COLUMN_NAME = 'leido_por_usuario_id'
+  ) THEN
+    ALTER TABLE alerta ADD COLUMN leido_por_usuario_id BIGINT UNSIGNED NULL AFTER leida;
+  END IF;
+
+  -- Agregar columna leido_en a alerta si no existe
+  IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'alerta'
+      AND COLUMN_NAME = 'leido_en'
+  ) THEN
+    ALTER TABLE alerta ADD COLUMN leido_en TIMESTAMP NULL AFTER leido_por_usuario_id;
+  END IF;
+END$$
+
+-- Procedure to add columns to caja_cierre table
+DROP PROCEDURE IF EXISTS add_caja_cierre_columns$$
+CREATE PROCEDURE add_caja_cierre_columns()
+BEGIN
+  -- Agregar columna estado a caja_cierre si no existe
+  IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'caja_cierre'
+      AND COLUMN_NAME = 'estado'
+  ) THEN
+    ALTER TABLE caja_cierre ADD COLUMN estado VARCHAR(20) NOT NULL DEFAULT 'pending' AFTER notas;
+  END IF;
+
+  -- Agregar columna revisado_por_usuario_id a caja_cierre si no existe
+  IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'caja_cierre'
+      AND COLUMN_NAME = 'revisado_por_usuario_id'
+  ) THEN
+    ALTER TABLE caja_cierre ADD COLUMN revisado_por_usuario_id BIGINT UNSIGNED NULL AFTER estado;
+  END IF;
+
+  -- Agregar columna revisado_en a caja_cierre si no existe
+  IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'caja_cierre'
+      AND COLUMN_NAME = 'revisado_en'
+  ) THEN
+    ALTER TABLE caja_cierre ADD COLUMN revisado_en TIMESTAMP NULL AFTER revisado_por_usuario_id;
+  END IF;
+
+  -- Agregar columna comentario_revision a caja_cierre si no existe
+  IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'caja_cierre'
+      AND COLUMN_NAME = 'comentario_revision'
+  ) THEN
+    ALTER TABLE caja_cierre ADD COLUMN comentario_revision TEXT NULL AFTER revisado_en;
+  END IF;
+END$$
+
+-- Procedure to add unique constraint to caja_cierre table
+DROP PROCEDURE IF EXISTS add_caja_cierre_unique_key$$
+CREATE PROCEDURE add_caja_cierre_unique_key()
+BEGIN
+  -- Agregar constraint único a caja_cierre.fecha si no existe
+  IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'caja_cierre'
+      AND INDEX_NAME = 'ux_caja_fecha'
+  ) THEN
+    ALTER TABLE caja_cierre ADD UNIQUE KEY ux_caja_fecha (fecha);
+  END IF;
+END$$
+
+DELIMITER ;
+
+-- Execute all procedures
+CALL add_usuario_columns();
+CALL add_orden_columns();
+CALL add_alerta_columns();
+CALL add_caja_cierre_columns();
+CALL add_caja_cierre_unique_key();
+
+-- Clean up procedures
+DROP PROCEDURE IF EXISTS add_usuario_columns;
+DROP PROCEDURE IF EXISTS add_orden_columns;
+DROP PROCEDURE IF EXISTS add_alerta_columns;
+DROP PROCEDURE IF EXISTS add_caja_cierre_columns;
+DROP PROCEDURE IF EXISTS add_caja_cierre_unique_key;
 
 -- ============================================
 -- ETAPA 13: Datos iniciales (Seeds)
